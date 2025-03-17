@@ -303,7 +303,73 @@ def unit(v):
     u = v / n
     return u
 
+def FastInverseKinematics(pose, nsparam, rconf):
+    arm, elbow, wrist = Configuration(rconf)
+    tol = 1e-8
+    l = np.array([0.36, 0.42, 0.4, 0.15194])
+    dh = np.array([[0, -np.pi/2, 0.36   , 0],
+                   [0, np.pi/2 , 0      , 0],
+                   [0, np.pi/2 , 0.42   , 0],
+                   [0, -np.pi/2, 0      , 0],
+                   [0, -np.pi/2, 0.4    , 0],
+                   [0, np.pi/2 , 0      , 0],
+                   [0, 0       , 0.15194, 0]])
+    joints = np.zeros(7)
 
+    xend = pose[:3, 3]  # end-effector position from base
+    xs = np.array([0, 0, dh[0, 2]])  # shoulder position from base
+    xwt = np.array([0, 0, dh[-1, 2]])  # end-effector position from wrist
+    xw = xend - np.dot(pose[:3, :3], xwt)  # wrist position from base
+    xsw = xw - xs  # shoulder to wrist vector
+    usw = unit(xsw)
+
+    lse = l[1]  # upper arm length (shoulder to elbow)
+    lew = l[2]  # lower arm length (elbow to wrist)
+
+    assert np.linalg.norm(xsw) < lse + lew and np.linalg.norm(xsw) > lse - lew, 'Specified pose outside reachable workspace'
+
+    assert abs((np.linalg.norm(xsw)**2 - lse**2 - lew**2) - (2*lse*lew)) > tol, 'Elbow singularity. Tip at reach limit.'
+    joints[3] = elbow * np.arccos((np.linalg.norm(xsw)**2 - lse**2 - lew**2) / (2*lse*lew))
+
+    T34 = dh_calc(dh[3, 0], dh[3, 1], dh[3, 2], joints[3])
+    R34 = T34[:3, :3]
+
+    if np.linalg.norm(np.cross(xsw, np.array([0, 0, 1]))) > tol:
+        joints[0] = np.arctan2(xsw[1], xsw[0]) # ::neg x?
+    else:
+        joints[0] = 0
+    r = np.hypot(xsw[0], xsw[1])
+    dsw = np.linalg.norm(xsw)
+    phi = np.arccos((lse**2 + dsw**2 - lew**2) / (2*lse*dsw))
+    joints[1] = np.arctan2(r, xsw[2]) + elbow * phi
+    T01 = dh_calc(dh[0, 0], dh[0, 1], dh[0, 2], joints[0])
+    T12 = dh_calc(dh[1, 0], dh[1, 1], dh[1, 2], joints[1])
+    T23 = dh_calc(dh[2, 0], dh[2, 1], dh[2, 2], 0)
+    R03_o = T01[:3, :3] @ T12[:3, :3] @ T23[:3, :3]
+
+    skew_usw = skew(usw)
+
+    As = skew_usw @ R03_o
+    Bs = -(skew_usw @ skew_usw) @ R03_o
+    Cs = np.outer(usw, usw) @ R03_o
+
+    R03 = As * np.sin(nsparam) + Bs * np.cos(nsparam) + Cs
+
+    joints[0] = np.arctan2(arm * R03[1, 1], arm * R03[0, 1])
+    joints[1] = arm * np.arccos(R03[2, 1])
+    joints[2] = np.arctan2(arm * -R03[2, 2], arm * -R03[2, 0])
+
+    Aw = R34.T @ As.T @ pose[:3, :3]
+    Bw = R34.T @ Bs.T @ pose[:3, :3]
+    Cw = R34.T @ Cs.T @ pose[:3, :3]
+
+    R47 = Aw * np.sin(nsparam) + Bw * np.cos(nsparam) + Cw
+    
+    joints[4] = np.arctan2(wrist * R47[1, 2], wrist * R47[0, 2])
+    joints[5] = wrist * np.arccos(R47[2, 2])
+    joints[6] = np.arctan2(wrist * R47[2, 1], wrist * -R47[2, 0])
+
+    return joints
 
 
 
