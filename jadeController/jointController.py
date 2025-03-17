@@ -1,4 +1,4 @@
-class JadeController:
+class JointController:
 
     def onStateChange(client, oldState, newState):
         client.superOnStateChange(oldState, newState)
@@ -6,9 +6,9 @@ class JadeController:
     def monitor(client):
         client.superMonitor()
 
-    def setOnWaitForCommand(client):
+    def waitForCommand(client):
         client.superWaitForCommand()
 
-    def setOnCommand(client):
+    def command(client):
         client.superCommand()
     

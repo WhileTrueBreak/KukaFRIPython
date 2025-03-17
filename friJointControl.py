@@ -1,8 +1,8 @@
 from jadeClient.clientJVM import stopJVM
 from jadeClient.lbrJadeClientThread import LBRJadeClientThread
 from jadeClient.lbrJadeClientCallback import LBRJadeClientCallback
+from jadeController.jointController import JointController
 import signal
-import time
 
 def signal_handler(sig, frame):
     print('You pressed Ctrl+C!')
@@ -18,7 +18,7 @@ port = 30200
 clientThread = LBRJadeClientThread(hostname, port)
 clientCallback = LBRJadeClientCallback()
 clientThread.addClientCallback(clientCallback)
-controller = JadeController()
+controller = JointController()
 clientCallback.setOnStateChange(controller.onStateChange)
 clientCallback.setOnMonitor(controller.monitor)
 clientCallback.setOnWaitForCommand(controller.waitForCommand)
