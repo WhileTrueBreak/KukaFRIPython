@@ -7,6 +7,7 @@ from com.kuka.connectivity.fastRobotInterface.clientSDK.connection import UdpCon
 from com.kuka.connectivity.fastRobotInterface.clientSDK.base import ClientApplication
 from jadevep.client import LBRClientWrapper
 import jpype
+import time
 
 class LBRJadeClientThread(threading.Thread):
     def __init__(self, hostname, port):
