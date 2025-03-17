@@ -2,11 +2,7 @@ import os
 import sys
 sys.path.append(os.getcwd())
 
-
 import numpy as np
-from utils.debug import *
-from utils.mathHelper import deg2Rad, rad2Deg
-
 
 def Configuration(rconf):
     arm = 1
@@ -307,29 +303,6 @@ def unit(v):
     u = v / n
     return u
 
-if __name__ == '__main__':
-    """
-    real xyz abc
-    [-699.05, -14.29, 1264.87]
-    [-1.54, -0.002, 0.59]
-    """
-
-    # joints = [0.4145, -16.2216, 0.9526, 48.1185, -0.6516, 30.3565, -80.1974]
-    joints = [90, 30, 0, 90, 0, -90, 0]
-    # joints = [45, 45, 45, 45, 45, 45, 45]
-    joints = list(map(deg2Rad, joints))
-    print(joints)
-    print('--------------'*10)
-
-    pose, nsparam, rconf, jout = ForwardKinematics(joints)
-    print(pose)
-    # print(list(map(rad2Deg, jout)))
-    # print(nsparam)
-    joints, s_mat, w_mat = InverseKinematics(pose, nsparam, rconf)
-
-    print('--------------'*10)
-    print(joints)
-    # print(list(map(rad2Deg, joints)))
 
 
 
