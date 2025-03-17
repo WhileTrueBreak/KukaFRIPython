@@ -35,8 +35,8 @@ class LBRJadeClientThread(threading.Thread):
             success = self.app.step()
             if not success:
                 self.isRunning = False
-        except Exception as e:
-            print(f"Error in step(): {e}")
+        except jpype.JException as e:
+            e.printStackTrace()
             self.isRunning = False
 
     def stop(self):
