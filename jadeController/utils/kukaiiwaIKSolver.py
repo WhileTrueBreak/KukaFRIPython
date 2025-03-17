@@ -4,6 +4,8 @@ sys.path.append(os.getcwd())
 
 from numba import njit
 import numpy as np
+KINEMATICS_COMPILED = False
+
 DH = np.array([
     [0, -np.pi/2, 0.36, 0],
     [0, np.pi/2, 0, 0],
@@ -355,8 +357,8 @@ def dh_calc_optimized(a, cos_alpha, sin_alpha, d, theta):
 def FastInverseKinematics(pose, nsparam, rconf):
     arm, elbow, wrist = Configuration(rconf)  # Assuming Configuration is defined
     joints = np.zeros(7)
-    rpose = pose[:3, :3]
-    xend = pose[:3, 3]
+    rpose = np.ascontiguousarray(pose[:3, :3])
+    xend = np.ascontiguousarray(pose[:3, 3])
     
     # Wrist position calculation
     xw = xend - rpose @ XWT
@@ -382,7 +384,7 @@ def FastInverseKinematics(pose, nsparam, rconf):
     # Shoulder orientation calculation
     T01 = dh_calc_optimized(DH[0, 0], cos_alpha[0], sin_alpha[0], DH[0, 2], joints[0])
     T12 = dh_calc_optimized(DH[1, 0], cos_alpha[1], sin_alpha[1], DH[1, 2], joints[1])
-    R03_o = T01[:3, :3] @ T12[:3, :3] @ T23[:3, :3]
+    R03_o = np.ascontiguousarray(T01[:3, :3]) @ np.ascontiguousarray(T12[:3, :3]) @ np.ascontiguousarray(T23[:3, :3])
     
     usw = unit(xsw)
     skew_usw = skew(usw)
@@ -402,7 +404,7 @@ def FastInverseKinematics(pose, nsparam, rconf):
     joints[2] = np.arctan2(arm * -R03[2, 2], arm * -R03[2, 0])
     
     # Wrist orientation calculation
-    R34 = dh_calc_optimized(DH[3, 0], cos_alpha[3], sin_alpha[3], DH[3, 2], joints[3])[:3, :3]
+    R34 = np.ascontiguousarray(dh_calc_optimized(DH[3, 0], cos_alpha[3], sin_alpha[3], DH[3, 2], joints[3])[:3, :3])
     Aw = R34.T @ As.T @ rpose
     Bw = R34.T @ Bs.T @ rpose
     Cw = R34.T @ Cs.T @ rpose
@@ -415,8 +417,12 @@ def FastInverseKinematics(pose, nsparam, rconf):
     
     return joints
 
-
-
+if not KINEMATICS_COMPILED:
+    print("Compiling Kinematics...")
+    p, r, c, _ = ForwardKinematics([np.pi/3, np.pi/3, np.pi/3, np.pi/3, np.pi/3, np.pi/3, np.pi/3])
+    j = FastInverseKinematics(p, r, c)
+    KINEMATICS_COMPILED = True
+    print("Compiled Kinematics.")
 
 
 

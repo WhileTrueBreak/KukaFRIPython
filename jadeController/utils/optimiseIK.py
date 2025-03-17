@@ -50,7 +50,7 @@ def kuka_pose(x, y, z, a, b, c):
 def optimizeR(pose, rconf):
     def objective(r):
         try:
-            joints, _, _ = FastInverseKinematics(pose, r, rconf)
+            joints = FastInverseKinematics(pose, r, rconf)
             return jointRewardFunction(joints)
         except:
             return float('1e+30')
@@ -62,7 +62,7 @@ def optimiseRot(x, y, z, rconf):
     def objective(a,b,c,r):
         pose = kuka_pose(x, y, z, a, b, c)
         try:
-            joints, _, _ = FastInverseKinematics(pose, r, rconf)
+            joints = FastInverseKinematics(pose, r, rconf)
             return jointRewardFunction(joints)
         except:
             return float('1e+30')
@@ -74,7 +74,7 @@ def optimisePos(a, b, c, rconf):
     def objective(x,y,z,r):
         pose = kuka_pose(x, y, z, a, b, c)
         try:
-            joints, _, _ = FastInverseKinematics(pose, r, rconf)
+            joints = FastInverseKinematics(pose, r, rconf)
             return jointRewardFunction(joints)
         except:
             return float('1e+30')
@@ -89,7 +89,7 @@ def optimiseFromXYZ(x, y, z):
         a, b, c, r = optimiseRot(x, y, z, i)
         pose = kuka_pose(x, y, z, a, b, c)
         try:
-            joints, _, _ = FastInverseKinematics(pose, r, i)
+            joints = FastInverseKinematics(pose, r, i)
             score = jointRewardFunction(joints)
             if score < bestScore:
                 bestScore = score
