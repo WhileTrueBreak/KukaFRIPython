@@ -2,8 +2,42 @@ import os
 import sys
 sys.path.append(os.getcwd())
 
+from numba import njit
 import numpy as np
+DH = np.array([
+    [0, -np.pi/2, 0.36, 0],
+    [0, np.pi/2, 0, 0],
+    [0, np.pi/2, 0.42, 0],
+    [0, -np.pi/2, 0, 0],
+    [0, -np.pi/2, 0.4, 0],
+    [0, np.pi/2, 0, 0],
+    [0, 0, 0.15194, 0]
+])
 
+# Precompute cos and sin for alpha values
+cos_alpha = np.cos(DH[:, 1])
+sin_alpha = np.sin(DH[:, 1])
+
+# Precompute constant transformation matrices
+T23 = np.array([
+    [1, 0, 0, 0.42],
+    [0, 0, -1, 0],
+    [0, 1, 0, 0],
+    [0, 0, 0, 1]
+])
+
+# Precompute other constants
+XS = np.array([0, 0, DH[0, 2]])  # Shoulder position
+XWT = np.array([0, 0, DH[-1, 2]])  # Wrist tool position
+LSE = 0.42  # Upper arm length
+LEW = 0.4   # Lower arm length
+LSE_SQ = LSE ** 2
+LEW_SQ = LEW ** 2
+LSE_LEW_2 = 2 * LSE * LEW
+LSE_PLUS_LEW = LSE + LEW
+LSE_MINUS_LEW = LSE - LEW
+
+@njit
 def Configuration(rconf):
     arm = 1
     elbow = 1
@@ -97,7 +131,7 @@ def ForwardKinematics(joints):
         else:
             nsparam = np.pi
 
-    return pose, nsparam, rconf, jout
+    return np.ascontiguousarray(pose), nsparam, rconf, jout
 
 def InverseKinematics(pose, nsparam, rconf):
     arm, elbow, wrist = Configuration(rconf)
@@ -288,6 +322,7 @@ def dh_calc(a, alpha, d, theta):
 
     return T
 
+@njit
 def skew(v):
     m = np.array([[ 0   ,-v[2], v[1]],
                   [ v[2], 0   ,-v[0]],
@@ -295,83 +330,90 @@ def skew(v):
 
     return m
 
+@njit
 def unit(v):
     n = np.linalg.norm(v)
-    if n < np.finfo(float).eps:
+    if n < np.finfo(np.float64).eps:
         raise ValueError('RTB:unit:zero_norm', 'Vector has zero norm')
 
     u = v / n
     return u
 
+@njit
+def dh_calc_optimized(a, cos_alpha, sin_alpha, d, theta):
+    """Optimized DH matrix calculation with precomputed cos_alpha/sin_alpha."""
+    ct = np.cos(theta)
+    st = np.sin(theta)
+    return np.array([
+        [ct, -st * cos_alpha, st * sin_alpha, a * ct],
+        [st, ct * cos_alpha, -ct * sin_alpha, a * st],
+        [0.0, sin_alpha, cos_alpha, d],
+        [0.0, 0.0, 0.0, 1.0]
+    ])
+
+@njit
 def FastInverseKinematics(pose, nsparam, rconf):
-    arm, elbow, wrist = Configuration(rconf)
-    tol = 1e-8
-    l = np.array([0.36, 0.42, 0.4, 0.15194])
-    dh = np.array([[0, -np.pi/2, 0.36   , 0],
-                   [0, np.pi/2 , 0      , 0],
-                   [0, np.pi/2 , 0.42   , 0],
-                   [0, -np.pi/2, 0      , 0],
-                   [0, -np.pi/2, 0.4    , 0],
-                   [0, np.pi/2 , 0      , 0],
-                   [0, 0       , 0.15194, 0]])
+    arm, elbow, wrist = Configuration(rconf)  # Assuming Configuration is defined
     joints = np.zeros(7)
-
-    xend = pose[:3, 3]  # end-effector position from base
-    xs = np.array([0, 0, dh[0, 2]])  # shoulder position from base
-    xwt = np.array([0, 0, dh[-1, 2]])  # end-effector position from wrist
-    xw = xend - np.dot(pose[:3, :3], xwt)  # wrist position from base
-    xsw = xw - xs  # shoulder to wrist vector
-    usw = unit(xsw)
-
-    lse = l[1]  # upper arm length (shoulder to elbow)
-    lew = l[2]  # lower arm length (elbow to wrist)
-
-    assert np.linalg.norm(xsw) < lse + lew and np.linalg.norm(xsw) > lse - lew, 'Specified pose outside reachable workspace'
-
-    assert abs((np.linalg.norm(xsw)**2 - lse**2 - lew**2) - (2*lse*lew)) > tol, 'Elbow singularity. Tip at reach limit.'
-    joints[3] = elbow * np.arccos((np.linalg.norm(xsw)**2 - lse**2 - lew**2) / (2*lse*lew))
-
-    T34 = dh_calc(dh[3, 0], dh[3, 1], dh[3, 2], joints[3])
-    R34 = T34[:3, :3]
-
-    if np.linalg.norm(np.cross(xsw, np.array([0, 0, 1]))) > tol:
-        joints[0] = np.arctan2(xsw[1], xsw[0]) # ::neg x?
-    else:
-        joints[0] = 0
+    rpose = pose[:3, :3]
+    xend = pose[:3, 3]
+    
+    # Wrist position calculation
+    xw = xend - rpose @ XWT
+    xsw = xw - XS
+    norm_xsw = np.linalg.norm(xsw)
+    
+    # Reachability check
+    if not (LSE_MINUS_LEW < norm_xsw < LSE_PLUS_LEW):
+        raise ValueError('Pose outside workspace')
+    
+    # Elbow joint calculation
+    cos_theta = (norm_xsw**2 - LSE_SQ - LEW_SQ) / LSE_LEW_2
+    if abs(cos_theta) > 1 - 1e-8:
+        raise ValueError('Elbow singularity')
+    joints[3] = elbow * np.arccos(cos_theta)
+    
+    # Base rotation calculation
     r = np.hypot(xsw[0], xsw[1])
-    dsw = np.linalg.norm(xsw)
-    phi = np.arccos((lse**2 + dsw**2 - lew**2) / (2*lse*dsw))
+    phi = np.arccos((LSE_SQ + norm_xsw**2 - LEW_SQ) / (2 * LSE * norm_xsw))
+    joints[0] = np.arctan2(xsw[1], xsw[0]) if r > 1e-8 else 0.0
     joints[1] = np.arctan2(r, xsw[2]) + elbow * phi
-    T01 = dh_calc(dh[0, 0], dh[0, 1], dh[0, 2], joints[0])
-    T12 = dh_calc(dh[1, 0], dh[1, 1], dh[1, 2], joints[1])
-    T23 = dh_calc(dh[2, 0], dh[2, 1], dh[2, 2], 0)
+    
+    # Shoulder orientation calculation
+    T01 = dh_calc_optimized(DH[0, 0], cos_alpha[0], sin_alpha[0], DH[0, 2], joints[0])
+    T12 = dh_calc_optimized(DH[1, 0], cos_alpha[1], sin_alpha[1], DH[1, 2], joints[1])
     R03_o = T01[:3, :3] @ T12[:3, :3] @ T23[:3, :3]
-
+    
+    usw = unit(xsw)
     skew_usw = skew(usw)
-
+    skew_usw_sq = skew_usw @ skew_usw
+    
     As = skew_usw @ R03_o
-    Bs = -(skew_usw @ skew_usw) @ R03_o
+    Bs = -skew_usw_sq @ R03_o
     Cs = np.outer(usw, usw) @ R03_o
-
-    R03 = As * np.sin(nsparam) + Bs * np.cos(nsparam) + Cs
-
+    
+    # Compute R03 using precomputed sin/cos
+    sn, cn = np.sin(nsparam), np.cos(nsparam)
+    R03 = As * sn + Bs * cn + Cs
+    
+    # Arm joints calculation
     joints[0] = np.arctan2(arm * R03[1, 1], arm * R03[0, 1])
     joints[1] = arm * np.arccos(R03[2, 1])
     joints[2] = np.arctan2(arm * -R03[2, 2], arm * -R03[2, 0])
-
-    Aw = R34.T @ As.T @ pose[:3, :3]
-    Bw = R34.T @ Bs.T @ pose[:3, :3]
-    Cw = R34.T @ Cs.T @ pose[:3, :3]
-
-    R47 = Aw * np.sin(nsparam) + Bw * np.cos(nsparam) + Cw
     
+    # Wrist orientation calculation
+    R34 = dh_calc_optimized(DH[3, 0], cos_alpha[3], sin_alpha[3], DH[3, 2], joints[3])[:3, :3]
+    Aw = R34.T @ As.T @ rpose
+    Bw = R34.T @ Bs.T @ rpose
+    Cw = R34.T @ Cs.T @ rpose
+    R47 = Aw * sn + Bw * cn + Cw
+    
+    # Wrist joints calculation
     joints[4] = np.arctan2(wrist * R47[1, 2], wrist * R47[0, 2])
     joints[5] = wrist * np.arccos(R47[2, 2])
     joints[6] = np.arctan2(wrist * R47[2, 1], wrist * -R47[2, 0])
-
+    
     return joints
-
-
 
 
 
