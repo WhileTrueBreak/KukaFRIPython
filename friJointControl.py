@@ -26,7 +26,7 @@ clientCallback.setOnWaitForCommand(controller.waitForCommand)
 clientCallback.setOnCommand(controller.command)
 clientThread.start()
 
-controller.setTargetJointValues(optimiseFromXYZ(0.5, 0.5, 0.5))
+controller.setTargetJointValues(optimiseFromXYZ(-0.5, -0.5, 0.5))
 
 while True:
     if input("Press q to quit: ") == "q":

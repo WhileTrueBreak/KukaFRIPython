@@ -82,10 +82,10 @@ def optimisePos(a, b, c, rconf):
     result = minimize(lambda params: objective(*params), initial_guess)
     return result.x
 
-def optimiseFromXYZ(x, y, z):
+def optimiseFromXYZ(x, y, z, confs=[0,1,2,3,4,5,6,7]):
     bestScore = float('1e+300')
     bestJoints = None
-    for i in range(8):
+    for i in confs:
         a, b, c, r = optimiseRot(x, y, z, i)
         pose = kuka_pose(x, y, z, a, b, c)
         try:
@@ -98,10 +98,10 @@ def optimiseFromXYZ(x, y, z):
             pass
     return bestJoints
 
-def optimiseFromABC(a, b, c):
+def optimiseFromABC(a, b, c, confs=[0,1,2,3,4,5,6,7]):
     bestScore = float('1e+300')
     bestJoints = None
-    for i in range(8):
+    for i in confs:
         x, y, z, r = optimisePos(a, b, c, i)
         pose = kuka_pose(x, y, z, a, b, c)
         try:
