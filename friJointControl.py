@@ -2,7 +2,7 @@ from jadeClient.clientJVM import stopJVM
 from jadeClient.lbrJadeClientThread import LBRJadeClientThread
 from jadeClient.lbrJadeClientCallback import LBRJadeClientCallback
 from jadeController.jointController import JointController
-from jadeController.utils.optimiseIK import optimiseFromXYZ
+from jadeController.utils.optimiseIK import optimiseFromXYZ, optimiseFromABC
 import signal
 
 def signal_handler(sig, frame):
@@ -26,7 +26,7 @@ clientCallback.setOnWaitForCommand(controller.waitForCommand)
 clientCallback.setOnCommand(controller.command)
 clientThread.start()
 
-controller.setTargetJointValues(optimiseFromXYZ(-0.5, -0.5, 0.5))
+controller.setTargetJointValues(optimiseFromABC(30, 30, 30))
 
 while True:
     if input("Press q to quit: ") == "q":

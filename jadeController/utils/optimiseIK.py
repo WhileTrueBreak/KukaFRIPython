@@ -67,7 +67,8 @@ def optimiseRot(x, y, z, rconf):
         except:
             return float('1e+30')
     initial_guess = np.array([0,0,0,0])
-    result = minimize(lambda params: objective(*params), initial_guess)
+    bounds = [(-np.pi, np.pi), (-np.pi, np.pi), (-np.pi, np.pi), (-10, 10)]
+    result = minimize(lambda params: objective(*params), initial_guess, bounds=bounds)
     return result.x
 
 def optimisePos(a, b, c, rconf):
@@ -78,8 +79,9 @@ def optimisePos(a, b, c, rconf):
             return jointRewardFunction(joints)
         except:
             return float('1e+30')
-    initial_guess = np.array([0,0,0,0])
-    result = minimize(lambda params: objective(*params), initial_guess)
+    initial_guess = np.array([0,0,0.5,0])
+    bounds = [(-1, 1), (-1, 1), (0.64, 1.36), (-10, 10)]
+    result = minimize(lambda params: objective(*params), initial_guess, bounds=bounds)
     return result.x
 
 def optimiseFromXYZ(x, y, z, confs=[0,1,2,3,4,5,6,7]):
