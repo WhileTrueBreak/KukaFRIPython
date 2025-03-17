@@ -32,7 +32,9 @@ clientCallback.setOnWaitForCommand(setOnWaitForCommand)
 clientCallback.setOnCommand(setOnCommand)
 clientThread.start()
 
-time.sleep(5)
+while True:
+    if input("Press q to quit: ") == "q":
+        break
 
 clientThread.stop()
 clientThread.join()

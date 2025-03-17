@@ -31,6 +31,7 @@ class LBRJadeClientThread(threading.Thread):
     
     def step(self):
         try:
+            print("Stepping...")
             success = self.app.step()
             if not success:
                 self.isRunning = False
