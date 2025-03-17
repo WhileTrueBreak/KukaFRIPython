@@ -1,7 +1,12 @@
+import numpy as np
+
 class JointController:
+
+    JOINT_STEP = 0.01
 
     def __init__(self):
         self.targetJointValues = None
+        self.waypointJointValues = None
 
     def onStateChange(self, client, oldState, newState):
         client.superOnStateChange(oldState, newState)
@@ -17,6 +22,14 @@ class JointController:
     def command(self, client):
         client.superCommand()
         self.update(client)
+        client.getRobotCommand().setJointPosition(self.waypointJointValues)
     
     def update(self, client):
-        pass
+        if not self.targetJointValues:
+            self.targetJointValues = np.array(client.getRobotState().getMeasuredJointPosition())
+            self.waypointJointValues = np.array(client.getRobotState().getMeasuredJointPosition())
+        currentJointValues = np.array(client.getRobotState().getMeasuredJointPosition())
+        jointDifferences = self.targetJointValues-self.currentJointValues
+        scaleFactor = self.JOINT_STEP/np.max(jointDifference)
+        jointDifferences = jointDifferences*scaleFactor
+        self.waypointJointValues = currentJointValues+jointDifferences
