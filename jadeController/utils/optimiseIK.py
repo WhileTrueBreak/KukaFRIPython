@@ -4,8 +4,8 @@ import numpy as np
 
 def jScore(j, r, l=10):
     if j+1e-6 > r or j-1e-6 < -r:
-        return l*l*j*j
-    return (l*j*j)/(r*r)
+        return l*l*j*j*j*j
+    return (l*j*j*j*j)/(r*r*r*r)
 
 def jointRewardFunction(joints):
     return jScore(joints[0], 170*np.pi/180)+jScore(joints[1], 120*np.pi/180)+jScore(joints[2], 170*np.pi/180)+jScore(joints[3], 120*np.pi/180)+jScore(joints[4], 170*np.pi/180)+jScore(joints[5], 120*np.pi/180)+jScore(joints[6], 175*np.pi/180)

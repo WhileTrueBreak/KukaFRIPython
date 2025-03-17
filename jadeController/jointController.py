@@ -29,8 +29,11 @@ class JointController:
             self.targetJointValues = np.array(client.getRobotState().getMeasuredJointPosition())
             self.waypointJointValues = np.array(client.getRobotState().getMeasuredJointPosition())
         currentJointValues = np.array(client.getRobotState().getMeasuredJointPosition())
-        jointDifferences = self.targetJointValues-self.currentJointValues
-        scaleFactor = self.JOINT_STEP/np.max(jointDifferences)
+        jointDifferences = self.targetJointValues-currentJointValues
+        maxDifference = np.max(np.abs(jointDifferences))
+        scaleFactor = 1
+        if maxDifference > self.JOINT_STEP:
+            scaleFactor = self.JOINT_STEP/np.max(jointDifferences)
         jointDifferences = jointDifferences*scaleFactor
         self.waypointJointValues = currentJointValues+jointDifferences
     
