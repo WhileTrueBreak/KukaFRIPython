@@ -8,40 +8,40 @@ from jpype import JImplements, JOverride
 class LBRJadeClientCallback:
 
     def __init__(self):
-        self.onStateChange = None
-        self.onMonitor = None
-        self.onWaitForCommand = None
-        self.onCommand = None
+        self._onStateChange = None
+        self._onMonitor = None
+        self._onWaitForCommand = None
+        self._onCommand = None
 
     @JOverride
     def onStateChange(self, client, oldState, newState):
         print("State changed from %s to %s" % (oldState, newState))
-        if self.onStateChange:
-            self.onStateChange(client, oldState, newState)
+        if self._onStateChange:
+            self._onStateChange(client, oldState, newState)
 
     @JOverride
     def monitor(self, client):
-        if self.onMonitor:
-            self.onMonitor(client)
+        if self._onMonitor:
+            self._onMonitor(client)
 
     @JOverride
     def waitForCommand(self, client):
-        if self.onWaitForCommand:
-            self.onWaitForCommand(client)
+        if self._onWaitForCommand:
+            self._onWaitForCommand(client)
 
     @JOverride
     def command(self, client):
-        if self.onCommand:
-            self.onCommand(client)
+        if self._onCommand:
+            self._onCommand(client)
 
     def setOnStateChange(self, callback):
-        self.onStateChange = callback
+        self._onStateChange = callback
     
     def setOnMonitor(self, callback):
-        self.onMonitor = callback
+        self._onMonitor = callback
     
     def setOnWaitForCommand(self, callback):
-        self.onWaitForCommand = callback
+        self._onWaitForCommand = callback
     
     def setOnCommand(self, callback):
-        self.onCommand = callback
+        self._onCommand = callback
