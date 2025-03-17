@@ -21,11 +21,11 @@ clientThread.addClientCallback(clientCallback)
 client = clientThread.client
 
 def monitor(client):
-    client.super.monitor()
+    client.superMonitor()
 def setOnWaitForCommand(client):
-    client.super.waitForCommand()
+    client.superWaitForCommand()
 def setOnCommand(client):
-    client.super.command()
+    client.superCommand()
 
 clientCallback.setOnMonitor(monitor)
 clientCallback.setOnWaitForCommand(setOnWaitForCommand)
