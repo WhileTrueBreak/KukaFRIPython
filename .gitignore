@@ -1,7 +1,10 @@
 /bin
 /include
+/Include
 /lib
+/Lib
 /lib64
+/Scripts
 /share
 pyvenv.cfg
 
