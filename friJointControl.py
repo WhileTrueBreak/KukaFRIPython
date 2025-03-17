@@ -18,18 +18,11 @@ port = 30200
 clientThread = LBRJadeClientThread(hostname, port)
 clientCallback = LBRJadeClientCallback()
 clientThread.addClientCallback(clientCallback)
-client = clientThread.client
-
-def monitor(client):
-    client.superMonitor()
-def setOnWaitForCommand(client):
-    client.superWaitForCommand()
-def setOnCommand(client):
-    client.superCommand()
-
-clientCallback.setOnMonitor(monitor)
-clientCallback.setOnWaitForCommand(setOnWaitForCommand)
-clientCallback.setOnCommand(setOnCommand)
+controller = JadeController()
+clientCallback.setOnStateChange(controller.onStateChange)
+clientCallback.setOnMonitor(controller.monitor)
+clientCallback.setOnWaitForCommand(controller.waitForCommand)
+clientCallback.setOnCommand(controller.command)
 clientThread.start()
 
 while True:
