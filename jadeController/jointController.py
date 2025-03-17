@@ -25,7 +25,7 @@ class JointController:
         client.getRobotCommand().setJointPosition(self.waypointJointValues)
     
     def update(self, client):
-        if not self.targetJointValues:
+        if self.targetJointValues is None:
             self.targetJointValues = np.array(client.getRobotState().getMeasuredJointPosition())
             self.waypointJointValues = np.array(client.getRobotState().getMeasuredJointPosition())
         currentJointValues = np.array(client.getRobotState().getMeasuredJointPosition())
