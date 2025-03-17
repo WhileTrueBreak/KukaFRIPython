@@ -24,14 +24,22 @@ class LBRJadeClientThread(threading.Thread):
     def run(self):
         print("Starting client thread...")
         self.isRunning = True
+        start_time = time.time()
+        steps = 0
         while self.isRunning:
             self.step()
+            steps += 1
+            current_time = time.time()
+            if current_time - start_time > 1.0:
+                step_rate = steps / (current_time - start_time)
+                print("Step rate: %.2f steps/s" % step_rate)
+                start_time = current_time
+                steps = 0
         self.stop()
         print("Stopped client thread.")
     
     def step(self):
         try:
-            print("Stepping...")
             success = self.app.step()
             if not success:
                 self.isRunning = False
