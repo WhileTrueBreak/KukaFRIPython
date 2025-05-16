@@ -28,9 +28,12 @@ clientThread.start()
 
 controller.setTargetJointValues(optimiseFromABC(30, 30, 30))
 
-while True:
-    if input("Press q to quit: ") == "q":
-        break
+try:
+    while True:
+        if input("Press q to quit: ") == "q":
+            break
+except Exception as e:
+    print(e)
 
 clientThread.stop()
 clientThread.join()

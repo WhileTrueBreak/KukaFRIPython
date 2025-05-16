@@ -5,10 +5,9 @@ from jadeController.utils.optimiseIK import optimiseFromXYZ, optimiseFromABC
 # n = 10
 # start_time = time.perf_counter_ns()
 # for i in range(n):
-#     joints = optimiseFromABC(0.5,0.5,90)
+#     joints = optimiseFromXYZ(0.5,0.5,0.8)
 # end_time = time.perf_counter_ns()
 # print("Time taken for Optimisation:", (end_time - start_time)/n/1000000, "milliseconds")
 # print("Total Time taken for Optimisation:", (end_time - start_time)/1000000, "milliseconds")
 
-# print(optimiseFromXYZ(0.5,0.5,0.5))
-print(optimiseFromABC(0, 0, 0))
+print(optimiseFromXYZ(0.5,0.5,0.5))

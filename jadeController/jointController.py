@@ -28,6 +28,7 @@ class JointController:
         if self.targetJointValues is None:
             self.targetJointValues = np.array(client.getRobotState().getMeasuredJointPosition())
             self.waypointJointValues = np.array(client.getRobotState().getMeasuredJointPosition())
+        
         currentJointValues = np.array(client.getRobotState().getMeasuredJointPosition())
         jointDifferences = self.targetJointValues-currentJointValues
         maxDifference = np.max(np.abs(jointDifferences))
